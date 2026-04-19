@@ -26,7 +26,7 @@ class Light:
 
     def edit_light(self) -> None:
         while True:
-            print("(1) Change name, (2) Change brightness, (3) -> Change warmth (0) -> Return")
+            print("(1) Change name | (2) Change brightness | (3) Change warmth | (0) Back")
             option = input("Enter choice: ")
             print("")
             
@@ -41,6 +41,7 @@ class Light:
                     break
                 case _:
                     print("Unknown option")
+        print("")
     
     def set_brightness(self, p_brightness: int) -> None:
         self.brightness = p_brightness
@@ -78,7 +79,7 @@ class LightPreset:
         print("----- ROOMLIGHT CONTROLLER -----\n")
         while True:
             print(" - Edit preset -")
-            print("(1) Change name | (2) Change brightness | (3) Change warmth | (0) Return")
+            print("(1) Change name | (2) Change brightness | (3) Change warmth | (0) Back")
             feed = input("Enter choice: ")
             print("")
             
@@ -104,6 +105,7 @@ class LightPreset:
                         self.warmth = new_warmth
                 case _:
                     print("Unknown option")
+        print("")
     
     def apply_preset(self, p_lights: list[Light]) -> list[Light]:
         for light in p_lights:
@@ -185,12 +187,12 @@ class RoomPreset:
     
     def print_info(self) -> None:
         print("Name: " + self.name + " | The room preset includes these light presets:\n")
-        print("     Main light:  ", end="")
+        print("     Main light:          ", end="")
         self.main_light_preset.print_info()
         if self.secondary_light_preset is not None:
-            print("\n     Secondary light:  ", end="")
+            print("\n     Secondary light:     ", end="")
             self.secondary_light_preset.print_info()
-        print("\n     Bed light:  ", end="")
+        print("\n     Bed light:           ", end="")
         self.bed_light_preset.print_info()
         print("")
 
@@ -200,9 +202,9 @@ class RoomPreset:
         while True:
             print(" - Edit preset -")
             if self.secondary_light_preset is None:
-                print("(1) Change name | (2) Add secondary light | (3) Change light presets | (0) Return")
+                print("(1) Change name | (2) Add secondary light | (3) Change light presets | (0) Back")
             else:
-                print("(1) Change name | (2) Remove secondary light | (3) Change light presets | (0) Return")
+                print("(1) Change name | (2) Remove secondary light | (3) Change light presets | (0) Back")
             feed = input("Enter choice: ")
             print("")
             
@@ -300,6 +302,21 @@ def initialize(p_room_list: list[Room],
     p_room_presets.extend([example_room_preset_1, example_room_preset_2])
 
 
+def use_existing_light_preset(p_light_presets: list[LightPreset], 
+                              p_room_presets: list[RoomPreset], 
+                              p_light_type: str) -> LightPreset | None:
+    for l_preset in p_light_presets:
+        l_preset.print_info()
+    feed = input("Type the name of the light preset you want to use for " + p_light_type + " light (list above): ")
+    preset_found = False
+    for l_preset in p_light_presets:
+        if feed == l_preset.name:
+            return l_preset
+    print("Preset not found.")
+    return None
+
+
+
 def print_main_menu() -> str:
     print("----- ROOMLIGHT CONTROLLER -----\n")
     print(" - Home - \n")
@@ -312,7 +329,14 @@ def print_main_menu() -> str:
     return choice
 
 
-def preset_menu(p_preset_type: str, p_light_presets: list[LightPreset], p_room_presets: list[RoomPreset], p_rooms: list[Room]) -> None:
+def preset_menu(p_preset_type: str, 
+                p_light_presets: list[LightPreset], 
+                p_room_presets: list[RoomPreset], 
+                p_rooms: list[Room], 
+                recall: bool = False) -> None:
+    feed = ""
+    if recall:
+        feed = "1"
     while True:
         system("clear||cls")
         print("----- ROOMLIGHT CONTROLLER -----\n")
@@ -327,31 +351,70 @@ def preset_menu(p_preset_type: str, p_light_presets: list[LightPreset], p_room_p
                 print("No light presets found.\n")
         if p_preset_type == "room":
             if len(p_room_presets) != 0:
-                print(str(len(p_room_presets)) + " room presets found: \n")
+                print(str(len(p_room_presets)) + " light presets found: \n")
                 for preset in p_room_presets:
                     preset.print_info()
                     print("")
             else:
                 print("No room presets found.\n")
-        print("(1) Create new preset | (0) Return")
+        print("(1) Create new preset | (0) Back")
         print("To modify or apply a preset to " + p_preset_type + "(s), type the name of the preset\n")
-        feed = input("Enter choice / preset name: ")
+        if feed == "":
+            feed = input("Enter choice / preset name: ")
         print("")
         match feed:
             case "0":
                 break
             case "1":
+                system("clear||cls")
                 print(" - New " + p_preset_type +" preset -")
-                name = input("Enter new name: ")
-                brightness = int(input("Enter brightness (1-10): "))
-                warmth = int(input("Enter color warmth (1-10): "))
-                if brightness > 10:
-                    brightness = 10
-                if warmth > 10:
-                    warmth = 10
-                else:
-                    new_light_preset = LightPreset(name, brightness, warmth)
-                    p_light_presets.append(new_light_preset)
+                name = input("Enter preset name: ")
+                if p_preset_type == "room":
+                    num_of_lights = int(input("Enter number of lights (2 or 3): "))
+                    types = ["main", "bed", "secondary"]
+
+                    selected_presets = []
+
+                    for i in range(num_of_lights):
+                        light_type = types[i]
+
+                        while True:
+                            s_feed = input("Create new preset for " + light_type + " light? (y/n): ")
+
+                            if s_feed.lower() == "y":
+                                lp_name = input("Enter preset name: ")
+                                brightness = min(int(input("Brightness (0-10): ")), 10)
+                                warmth = min(int(input("Warmth (0-10): ")), 10)
+
+                                preset = LightPreset(lp_name, brightness, warmth)
+                                p_light_presets.append(preset)
+                                selected_presets.append(preset)
+                                break
+
+                            elif s_feed.lower() == "n":
+                                preset = use_existing_light_preset(p_light_presets, p_room_presets, light_type)
+                                selected_presets.append(preset)
+                                break
+
+                            else:
+                                print("Invalid input")
+                    if num_of_lights == 2:
+                        new_room_preset = RoomPreset(name, selected_presets[0], selected_presets[1])
+                    elif num_of_lights == 3:
+                        new_room_preset = RoomPreset(name, selected_presets[0], selected_presets[1], selected_presets[2])
+                    p_room_presets.append(new_room_preset)
+                elif p_preset_type == "light":
+                    name = input("Enter name: ")
+                    brightness = int(input("Enter brightness (1-10): "))
+                    warmth = int(input("Enter color warmth (1-10): "))
+                    if brightness > 10:
+                        brightness = 10
+                    if warmth > 10:
+                        warmth = 10
+                    else:
+                        new_light_preset = LightPreset(name, brightness, warmth)
+                        p_light_presets.append(new_light_preset)
+                break
             case _:
                 if p_preset_type == "light":
                     for l_preset in p_light_presets:
@@ -360,7 +423,7 @@ def preset_menu(p_preset_type: str, p_light_presets: list[LightPreset], p_room_p
                             print("----- ROOMLIGHT CONTROLLER -----\n")
                             print(" - Light presets -\n")
                             l_preset.print_info()
-                            print("\n(1) Edit preset | (2) Apply preset to lights | (0) Return\n")
+                            print("\n(1) Edit preset | (2) Apply preset to lights | (0) Back\n")
                             feed = input("Enter choice: ")
                             print("")
                             match feed:
@@ -401,14 +464,14 @@ def preset_menu(p_preset_type: str, p_light_presets: list[LightPreset], p_room_p
                             print("----- ROOMLIGHT CONTROLLER -----\n")
                             print(" - Room presets -\n")
                             r_preset.print_info()
-                            print("(1) Edit preset | (2) Apply preset to rooms | (0) Return\n")
+                            print("(1) Edit preset | (2) Apply preset to rooms | (0) Back\n")
                             feed = input("Enter choice: ")
                             print("")
                             match feed:
                                 case "0":
                                     pass
                                 case "1":
-                                    preset.edit_preset(p_room_presets)
+                                    r_preset.edit_preset(p_room_presets)
                                 case "2":
                                     for room in p_rooms:
                                         room.print_info()
@@ -423,24 +486,30 @@ def preset_menu(p_preset_type: str, p_light_presets: list[LightPreset], p_room_p
                                         room_found = False
                                         
                                         for room in p_rooms:
-                                            if int(feed) == room.room_number:
-                                                if len(room.lights) == r_preset.num_of_lights:
-                                                    rooms_to_modify.append(room)
-                                                    room_found = True
-                                                elif len(room.lights) != r_preset.num_of_lights:
-                                                    print("The amount of lights in the room and preset dont match.")
+                                            try:
+                                                if int(feed) == room.room_number:
+                                                    if len(room.lights) == r_preset.num_of_lights:
+                                                        rooms_to_modify.append(room)
+                                                        room_found = True
+                                                    elif len(room.lights) != r_preset.num_of_lights:
+                                                        print("The amount of lights in the room and preset dont match.")
+                                            except ValueError:
+                                                print("Invalid room number")
+                                                continue
                                         
                                         if not room_found:
                                             print("Room " + feed + " not found.")
-                                    if len(rooms_to_modify) > 1:
+                                    if len(rooms_to_modify) >= 1:
                                         print("\nAre you sure you want to apply " + r_preset.name + " to the following rooms:")
                                         for room in rooms_to_modify:
                                             room.print_info()
                                         feed = input("y/n: ")
                                         if feed.lower() == "y":
                                             r_preset.apply_preset(rooms_to_modify)
+                                            break
                                         else:
                                             print("Preset applying cancelled.")
+                                            break
                                 case _:
                                     "Invalid input"
                         else:
@@ -448,8 +517,33 @@ def preset_menu(p_preset_type: str, p_light_presets: list[LightPreset], p_room_p
                             print("Preset '" + feed + "' not found.")
     system("clear||cls")
 
-
-
+def light_menu(p_rooms: list[Room]) -> None:
+    while True:
+        system("clear||cls")
+        print("----- ROOMLIGHT CONTROLLER -----\n")
+        print(" - Rooms and lights -\n")
+        for room in p_rooms:
+            room.print_info()
+        print("")
+        print("(1) Edit light | (0) Back\n")
+        feed = input("Enter choice: ")
+        print("")
+        match feed:
+            case "0":
+                system("clear||cls")
+                break
+            case "1":
+                feed = input("Enter the name of the light you want to edit: ")
+                print("")
+                light_found = False
+                for room in p_rooms:
+                    for light in room.lights:
+                        if light.name == feed:
+                            light.edit_light()
+                            print("")
+                            light_found = True
+                if not light_found:
+                    print("Light '" + feed + "' not found.")
 
         
 def main():
@@ -466,11 +560,7 @@ def main():
             case "0":
                 break
             case "1":
-                system("clear||cls")
-                print("----- ROOMLIGHT CONTROLLER -----\n")
-                print(" - Rooms and lights -\n")
-                for room in ROOMS:
-                    room.print_info()
+                light_menu(ROOMS)
             case "2":
                 system("clear||cls")
                 preset_menu("light", LIGHT_PRESETS, ROOM_PRESETS, ROOMS)
