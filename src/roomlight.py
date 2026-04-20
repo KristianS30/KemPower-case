@@ -23,7 +23,7 @@ class Light:
     def turn_off(self) -> None:
         self.is_on = False
 
-
+    #REQ_007 You can control the brightness and color of the lights  
     def edit_light(self) -> None:
         while True:
             print("(1) Change name | (2) Change brightness | (3) Change warmth | (0) Back")
@@ -32,6 +32,7 @@ class Light:
             
             match option:
                 case "1":
+                    # REQ_010 You can name the lights in the controller for ease of use
                     self.name = input("Change the name from " + self.name + " to: ")
                 case "2":
                     self.brightness = int(input("Change the brightness from " + str(self.brightness) + " to (0-10): "))
@@ -43,18 +44,6 @@ class Light:
                     print("Unknown option")
         print("")
     
-    def set_brightness(self, p_brightness: int) -> None:
-        self.brightness = p_brightness
-
-    def get_brightness(self) -> int:
-        return self.brightness
-
-    def set_warmth(self, p_warmth: int) -> None:
-        self.warmth = p_warmth
-
-    def get_warmth(self) -> int:
-        return self.warmth
-    
     def print_info(self) -> None:
         print("Name: " + self.name + " | Room: " + str(self.room_number) +
                " | Brightness: " + str(self.brightness) + " | Warmth: " + str(self.warmth) + " | ", end="")
@@ -64,6 +53,7 @@ class Light:
             print("Status: OFF")
 
 
+# REQ_003 You can create new light presets  
 class LightPreset:
     name: str
     brightness: int
@@ -107,6 +97,8 @@ class LightPreset:
                     print("Unknown option")
         print("")
     
+    # REQ_007 You can control the brightness and color of the lights
+    # REQ_002 You can apply settings to multiple lights simultanously
     def apply_preset(self, p_lights: list[Light]) -> list[Light]:
         for light in p_lights:
             light.brightness = self.brightness
@@ -142,9 +134,13 @@ class Room:
 
     def print_info(self) -> None:
         print("Room number: " + str(self.room_number) + " | The room has " + str(len(self.lights)) + " RoomLights:")
-        for light in self.lights:
-            print("      ", end="")
-            light.print_info()
+        print("    Main light:       ", end="")
+        self.main_light.print_info()
+        print("    Bed light:        ", end="")
+        self.bed_light.print_info()
+        if self.secondary_light is not None:
+            print("    Secondary light:  ", end="")
+            self.secondary_light.print_info()
         print("")
         
     def add_light(self, p_light: Light) -> None:
@@ -159,6 +155,7 @@ class Room:
             light.turn_off()
             
 
+# REQ_006 You can create preset categories for different room configurations
 class RoomPreset:
     name: str
     num_of_lights: int
@@ -258,6 +255,7 @@ class RoomPreset:
                 case _:
                     print("Invalid input")
 
+    # REQ_002 You can apply settings to multiple lights simultanously
     def apply_preset(self, p_rooms: list[Room]) -> None:
         for room in p_rooms:
             self.main_light_preset.apply_preset([room.main_light])
@@ -366,6 +364,8 @@ def preset_menu(p_preset_type: str,
             case "0":
                 break
             case "1":
+                # REQ_003 You can create new light presets  
+                # REQ_006 You can create preset categories for different room configurations  
                 system("clear||cls")
                 print(" - New " + p_preset_type +" preset -")
                 name = input("Enter preset name: ")
@@ -432,6 +432,7 @@ def preset_menu(p_preset_type: str,
                                 case "1":
                                     l_preset.edit_preset(p_light_presets)
                                 case "2":
+                                    # REQ_002 You can apply settings to multiple lights simultanously
                                     for room in p_rooms:
                                         room.print_info()
                                     print("")
@@ -473,6 +474,7 @@ def preset_menu(p_preset_type: str,
                                 case "1":
                                     r_preset.edit_preset(p_room_presets)
                                 case "2":
+                                    # REQ_002 You can apply settings to multiple lights simultanously
                                     for room in p_rooms:
                                         room.print_info()
                                     print("")
@@ -493,6 +495,7 @@ def preset_menu(p_preset_type: str,
                                                         room_found = True
                                                     elif len(room.lights) != r_preset.num_of_lights:
                                                         print("The amount of lights in the room and preset dont match.")
+                                                        room_found = True
                                             except ValueError:
                                                 print("Invalid room number")
                                                 continue
@@ -503,11 +506,13 @@ def preset_menu(p_preset_type: str,
                                         print("\nAre you sure you want to apply " + r_preset.name + " to the following rooms:")
                                         for room in rooms_to_modify:
                                             room.print_info()
-                                        feed = input("y/n: ")
-                                        if feed.lower() == "y":
+                                        confirm = input("y/n: ")
+                                        if confirm.lower() == "y":
                                             r_preset.apply_preset(rooms_to_modify)
+                                            rooms_to_modify.clear()
                                             break
                                         else:
+                                            rooms_to_modify.clear()
                                             print("Preset applying cancelled.")
                                             break
                                 case _:
@@ -525,7 +530,7 @@ def light_menu(p_rooms: list[Room]) -> None:
         for room in p_rooms:
             room.print_info()
         print("")
-        print("(1) Edit light | (0) Back\n")
+        print("(1) Edit light | (2) Turn light on/off | (0) Back\n")
         feed = input("Enter choice: ")
         print("")
         match feed:
@@ -533,6 +538,8 @@ def light_menu(p_rooms: list[Room]) -> None:
                 system("clear||cls")
                 break
             case "1":
+                # REQ_007 You can control the brightness and color of the lights  
+                # REQ_010 You can name the lights in the controller for ease of use
                 feed = input("Enter the name of the light you want to edit: ")
                 print("")
                 light_found = False
@@ -544,6 +551,23 @@ def light_menu(p_rooms: list[Room]) -> None:
                             light_found = True
                 if not light_found:
                     print("Light '" + feed + "' not found.")
+            case "2":
+                feed = input("Enter the name of the light you want to toggle: ")
+                print("")
+                light_found = False
+                for room in p_rooms:
+                    for light in room.lights:
+                        if light.name == feed:
+                            if light.is_on:
+                                light.turn_off()
+                            else:
+                                light.turn_on()
+                            print("")
+                            light_found = True
+                if not light_found:
+                    print("Light '" + feed + "' not found.")
+            case _:
+                print("Invalid input.")
 
         
 def main():
